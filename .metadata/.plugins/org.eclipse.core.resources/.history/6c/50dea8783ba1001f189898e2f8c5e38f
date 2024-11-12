@@ -1,0 +1,22 @@
+package ie.atu.sw;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class FileHandler {
+	
+	public static Map<String, double[]> loadEmbeddings(String path) {
+		
+		//Handle Edge Cases
+		if(path == null && path.trim().isEmpty()) { 
+			throw IllegalArgumentException;
+		}
+		
+		Map<String, double[]> embeddingsMap = new HashMap<>();
+		
+		
+		return embeddingsMap;
+		
+	}
+
+}

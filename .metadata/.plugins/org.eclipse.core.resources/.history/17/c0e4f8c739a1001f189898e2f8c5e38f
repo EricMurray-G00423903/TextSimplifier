@@ -1,0 +1,16 @@
+package ie.atu.sw;
+
+import java.util.Map;
+
+public class FileHandler {
+	
+	public static Map loadEmbeddings(String path) {
+		
+		Map<String, Double[]> embeddingsMap = new HashMap<>();
+		
+		
+		return null;
+		
+	}
+
+}
