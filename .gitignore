@@ -1,0 +1,8 @@
+# Ignore Eclipse project files
+.metadata/
+TextSimplifier/.classpath
+TextSimplifier/.project
+TextSimplifier/.settings/
+
+# Ignore build output
+TextSimplifier/bin/
