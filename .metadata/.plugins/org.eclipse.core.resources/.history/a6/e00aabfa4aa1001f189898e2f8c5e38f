@@ -1,0 +1,40 @@
+package ie.atu.sw;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class FileHandler {
+	
+	public static Map<String, double[]> loadEmbeddings(String path) {
+		
+		pathScrub(path);	//Scrub the path to handle any errors before method continues
+		
+		Map<String, double[]> embeddingsMap = new ConcurrentHashMap<>();	//Map of embeddings to populate and return
+		BufferedReader reader = new BufferedReader(new FileReader(path));
+		
+		return embeddingsMap;
+		
+	}
+	
+	private static void pathScrub(String path) {
+				
+		if(path == null || path.trim().isEmpty()) {
+			throw new IllegalArgumentException("The file path cannot be null or empty!");	//If the path is null or String is empty throw exception
+		}
+		
+		if(!path.endsWith(".txt")) {
+			throw new IllegalArgumentException("File needs to end in .txt");	//If the String path does not end with .txt throw exception
+		}
+		
+		File file = new File(path);	//File object for exists() & canRead() methods on the String path
+		
+		if(!file.exists() || !file.canRead()) {
+			throw new IllegalArgumentException("File does not exist OR Don't have permission to read file!");	//If we cant access the file or it doesnt exist throw exception
+		}
+					
+	}
+
+}
