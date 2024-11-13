@@ -4,7 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class FileHandler {
@@ -38,6 +40,27 @@ public class FileHandler {
 		reader.close();	//Close the reader after all the embeddings have been loaded
 		
 		return embeddingsMap;	//Return the finished map
+		
+	}
+	
+	public static Set<String> loadGoogle(String path) throws IOException {
+		
+		pathScrub(path);	//Scrub the path
+		
+		Set<String> googleWords = new HashSet<>();	//Create a new HashSet, CCHashSet not needed for the project, HashSet thread safe for this operation
+		BufferedReader reader = new BufferedReader(new FileReader(path));	//BufferedFileReader for the passed path
+		
+		String line;	//String to hold the current word
+		
+		while((line = reader.readLine()) != null) {	//While current line is not null, also assign line to readLine() on each pass
+			
+			line = line.trim();	//Trim any whitespaces for safety
+			googleWords.add(line);	//Add the current word to the Set
+			
+		}
+		
+		reader.close();	//Close the reader
+		return googleWords;	//return the set
 		
 	}
 	
