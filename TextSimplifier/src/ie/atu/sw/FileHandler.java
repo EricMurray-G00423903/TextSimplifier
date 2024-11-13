@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+//TODO Add JavaDocs Comments and Big-O notations
+
 public class FileHandler {
 	
 	public static Map<String, double[]> loadEmbeddings(String path) throws IOException {
