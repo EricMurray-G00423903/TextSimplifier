@@ -27,6 +27,32 @@ public class TextProcessor {
 		BufferedReader reader = new BufferedReader(new FileReader(inputPath));
 		BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath));
 		
+		String line;
+		
+		while((line = reader.readLine()) != null) {
+			
+			String[] splitLines = line.split("((?=\\p{Punct})|(?<=\\p{Punct})|\\s+)");
+			
+			StringBuilder sb = new StringBuilder();
+			
+			for (int i = 0; i < splitLines.length; i++) {
+				
+				if (splitLines[i].matches("\\p{Punct}+")) {
+					sb.append(splitLines[i]);
+				}
+				
+				if (googleSet.contains(splitLines[i])) {
+					
+					sb.append(splitLines[i] + " ");
+					
+				} else {
+					//implement find closest match from embeddings
+				}
+				
+			}
+			
+		}
+		
 		
 		reader.close();
 		writer.close();
