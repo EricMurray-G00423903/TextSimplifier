@@ -4,9 +4,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 //TODO Add JavaDocs Comments and Big-O notations
@@ -17,52 +16,66 @@ public class FileHandler {
 		
 		pathScrub(path);	//Scrub the path to handle any errors before method continues
 		
-		Map<String, double[]> embeddingsMap = new ConcurrentHashMap<>();	//Map of embeddings to populate and return
-		BufferedReader reader = new BufferedReader(new FileReader(path));	//BufferedReader for reading the lines of the file
+		Map<String, double[]> embeddingsMap = new HashMap<>();	//Map of embeddings to populate and return
 		
-		String line;	//String to hold the current line in the file
+		try (BufferedReader reader = new BufferedReader(new FileReader(path))) { 	//BufferedReader for reading the lines of the file
 		
-		while((line = reader.readLine()) != null) {	//Read the current line into the line String, continue with the loop if its not Null
+			String line;	//String to hold the current line in the file
 			
-			String[] lineParts = line.split(",");	//Split the line String into an array split by commas
-			
-			double[] vectorValues = new double[lineParts.length - 1];	//double array to store the vector values of each line same length as the linePart array
-			
-			for (int i = 1; i < lineParts.length; i++) {	//Iterate over the lineParts array starting at index 1 (index 0  is the word)
+			while((line = reader.readLine()) != null) {	//Read the current line into the line String, continue with the loop if its not Null
 				
-				double temp = Double.parseDouble(lineParts[i]);	//Add the double to a temp variable, parse as double
-				vectorValues[i - 1] = temp;	//Add the vector to the double[] array (i-1 to control going out of bounds)
+				String[] lineParts = line.split(",");	//Split the line String into an array split by commas
+				
+				double[] vectorValues = new double[lineParts.length - 1];	//double array to store the vector values of each line same length as the linePart array
+				
+				for (int i = 1; i < lineParts.length; i++) {	//Iterate over the lineParts array starting at index 1 (index 0  is the word)
+					
+					double temp = Double.parseDouble(lineParts[i]);	//Add the double to a temp variable, parse as double
+					vectorValues[i - 1] = temp;	//Add the vector to the double[] array (i-1 to control going out of bounds)
+					
+				}
+				
+				embeddingsMap.put(lineParts[0], vectorValues);	//After all the vectors have been added, add the word as the key and the vectorValues[] as the value to the CCHashMap
 				
 			}
 			
-			embeddingsMap.put(lineParts[0], vectorValues);	//After all the vectors have been added, add the word as the key and the vectorValues[] as the value to the CCHashMap
+			return embeddingsMap;	//Return the finished map
 			
 		}
-		
-		reader.close();	//Close the reader after all the embeddings have been loaded
-		
-		return embeddingsMap;	//Return the finished map
-		
+			
 	}
 	
-	public static Set<String> loadGoogle(String path) throws IOException {
+	public static Map<String, double[]> loadGoogle(String path, Map<String, double[]> embMap) throws IOException {
 		
 		pathScrub(path);	//Scrub the path
 		
-		Set<String> googleWords = new HashSet<>();	//Create a new HashSet, CCHashSet not needed for the project, HashSet thread safe for this operation
-		BufferedReader reader = new BufferedReader(new FileReader(path));	//BufferedFileReader for the passed path
+		Map<String, double[]> googleWords = new ConcurrentHashMap<>();	//CCHashMap of the Google words with embeddings
 		
-		String line;	//String to hold the current word
+		try (BufferedReader reader = new BufferedReader(new FileReader(path))) {	//BufferedFileReader for the passed path | Wrap in try to close even on exception thrown
 		
-		while((line = reader.readLine()) != null) {	//While current line is not null, also assign line to readLine() on each pass
+			String line = reader.readLine();	//String to hold the current word || Read the first line to check for Empty Files
 			
-			line = line.trim();	//Trim any whitespaces for safety
-			googleWords.add(line);	//Add the current word to the Set
+			if(line == null) {
+				
+				System.out.println(ConsoleColour.RED + "Google Words.txt File Empty - Using Empty Map" + ConsoleColour.RESET);
+				return googleWords;
+				
+			}
 			
-		}
-		
-		reader.close();	//Close the reader
-		return googleWords;	//return the set
+			
+			do {	// Process each line, trim whitespaces, add to map if matches
+				
+				line = line.trim();
+				
+				if(embMap.containsKey(line)) {
+					googleWords.put(line, embMap.get(line));
+				}
+				
+			} while((line = reader.readLine()) != null);
+						
+			return googleWords;	
+			
+		}	//end of try block
 		
 	}
 	
