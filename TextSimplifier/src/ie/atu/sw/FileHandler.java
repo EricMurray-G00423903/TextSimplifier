@@ -20,9 +20,15 @@ public class FileHandler {
 		
 		try (BufferedReader reader = new BufferedReader(new FileReader(path))) { 	//BufferedReader for reading the lines of the file
 		
-			String line;	//String to hold the current line in the file
+			String line = reader.readLine();	//String to hold the current line in the file
 			
-			while((line = reader.readLine()) != null) {	//Read the current line into the line String, continue with the loop if its not Null
+			if(line == null) {
+				
+				System.out.println(ConsoleColour.RED + "Embeddings Map.txt File Empty - Using Empty Map" + ConsoleColour.RESET);
+				return embeddingsMap;
+			}
+			
+			do {	//Read the current line into the line String, continue with the loop if its not Null
 				
 				String[] lineParts = line.split(",");	//Split the line String into an array split by commas
 				
@@ -37,7 +43,7 @@ public class FileHandler {
 				
 				embeddingsMap.put(lineParts[0], vectorValues);	//After all the vectors have been added, add the word as the key and the vectorValues[] as the value to the CCHashMap
 				
-			}
+			} while((line = reader.readLine()) != null);
 			
 			return embeddingsMap;	//Return the finished map
 			
