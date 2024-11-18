@@ -29,38 +29,44 @@ public class TextProcessor {
 			
 			while((line = reader.readLine()) != null) {
 				
+				if (line.trim().isEmpty()) {	//Handle if the current Line is Empty
+				    writer.newLine();
+				    continue;
+				}
+				
 				String[] splitLines = line.split("((?=\\p{Punct})|(?<=\\p{Punct})|\\s+)");	//Regex to split lines by punctuation and by white spaces
 				
 				StringBuilder sb = new StringBuilder();	//Create a String Builder
 				
-				for (int i = 0; i < splitLines.length; i++) {	//Iterate over the split Line
-					
-					if (splitLines[i].matches("\\p{Punct}+")) {
-						sb.append(splitLines[i] + " ");		//If the current string[] index is a punctation char then just append to the stringbuilder
-					}
-					
-					if (this.googleWordsMap.containsKey(splitLines[i])) {	//If the word already in the google Map then just append to the sb
-						
-						sb.append(splitLines[i] + " ");	//append with a whitespace after the word
-						
-					} else {	//if its not in the google Map
-						
-						if (this.embeddingsMap.containsKey(splitLines[i])) {	//and it is in the embeddings map
-							
-							String newWord = findClosestWord(splitLines[i]);	//find the closest word within the googleMap
-							sb.append(newWord + " ");	//append the new word from the google map to the sb
-							
-						} else {
-							
-							sb.append(splitLines[i] + " ");	//else if the word doesnt exist in either map just append
-							
-						}
-						
-					}
-					
+				for (int i = 0; i < splitLines.length; i++) { // Iterate over the split Line
+
+				    if (splitLines[i].matches("\\p{Punct}+")) {
+				    	
+				        sb.append(splitLines[i]); // Append punctuation directly without a space
+				        continue; // Move to the next iteration after handling punctuation
+				        
+				    }
+
+				    if (this.googleWordsMap.containsKey(splitLines[i])) {	// If the word is in the Google Map
+				    	
+				        sb.append(splitLines[i]).append(" "); // Append the word with a space
+				        
+				    } else { // If it's not in the Google Map
+				    	
+				        if (this.embeddingsMap.containsKey(splitLines[i])) { // If it's in the embeddings map
+				        	
+				            String newWord = findClosestWord(splitLines[i]); // Find the closest word
+				            sb.append(newWord).append(" "); // Append the new word with a space
+				            
+				        } else { // If the word doesn't exist in either map
+				        	
+				            sb.append(splitLines[i]).append(" "); // Append the word as-is with a space
+				            
+				        }
+				    }
 				}
 				
-				writer.write(sb.toString());	//write the current sb String to the line
+				writer.write(sb.toString().trim());	//write the current sb String to the line
 				writer.newLine();				//Move to the next line
 				
 			}
