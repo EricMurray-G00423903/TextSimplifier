@@ -68,11 +68,60 @@ public class TextProcessor {
 		
 	}
 	
-	public String findClosestWord(String wordToChange) {
+	public String findClosestWord(String wordToChange) {	//Pass in the current word to change
+				
+		String closestWord = null;	//Init the word to return
+		double highestSimilarity = Double.NEGATIVE_INFINITY;	//To hold the score for the highest scored similarity (Double.NEGATIVE_INFINITY) 
+																//Sets the placeholder to an ultimate negative to incase the cosine returns negative
 		
-		String closestWord = null;
+		double[] wordVector = embeddingsMap.get(wordToChange);	//Get the vectors of the current word to change
 		
-		return closestWord;
+		for (Map.Entry<String, double[]> entry : googleWordsMap.entrySet()) {	//Foreach loop over all the elements in the google map hashmap
+			
+			String currentWord = entry.getKey();	//Get the current word
+			double[] currentVector = entry.getValue();	//Get its vectors
+			
+			double currentCosine = calcCosineSim(wordVector, currentVector);	//Get the cosine similarity between the two sets of vectors
+			
+			if (currentCosine > highestSimilarity) {	//If the current cosine is higher than the highest sim 
+				
+				highestSimilarity = currentCosine;	//Assign the highest sim to the current
+				closestWord = entry.getKey();	//Set the closest word to that of the current key
+				
+			}
+			
+		}
+		
+		return closestWord;	//Return the closest word
+		
+	}
+	
+	public static double calcCosineSim(double[] vectorA, double[] vectorB) {	//Calculate the cosine similarity between the two vectors and return the sim value
+		
+		if(vectorA.length != vectorB.length) {
+			throw new IllegalArgumentException("Must be the same amount of Vectors to calculate!");	//Handle if the vector lengths are not the same
+		}
+		
+		double dotProduct = 0.0, magA = 0.0, magB = 0.0;	//Placeholder for the dot product, the two magnitudes
+		
+		for (int i = 0; i < vectorA.length; i++) {	//Loop over the vector array
+			
+		    dotProduct += vectorA[i] * vectorB[i];	//Multiply the two current vectors together and add them to the dotProduct
+		    magA += vectorA[i] * vectorA[i];	//Same method for mag A & B
+		    magB += vectorB[i] * vectorB[i];
+
+		}
+
+		magA = Math.sqrt(magA);	//Square root the values and reassign
+		magB = Math.sqrt(magB);
+		
+		if (magA == 0.0 || magB == 0.0) {
+			
+		    return 0.0;	//If either magnitudes are 0.0 return 0.0
+		    
+		}
+		
+		return dotProduct / (magA * magB);	//return the Dot Product over MagA * MagB
 		
 	}
 
