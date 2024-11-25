@@ -13,8 +13,6 @@ public class FileHandler {
 	
 	public static Map<String, double[]> loadEmbeddings(String path) throws IOException {
 		
-		pathScrub(path);	//Scrub the path to handle any errors before method continues
-		
 		Map<String, double[]> embeddingsMap = new ConcurrentHashMap<>();	//Map of embeddings to populate and return
 		
 		try (BufferedReader reader = new BufferedReader(new FileReader(path))) { 	//BufferedReader for reading the lines of the file
@@ -52,8 +50,6 @@ public class FileHandler {
 	
 	public static Map<String, double[]> loadGoogle(String path, Map<String, double[]> embMap) throws IOException {
 		
-		pathScrub(path);	//Scrub the path
-		
 		Map<String, double[]> googleWords = new ConcurrentHashMap<>();	//CCHashMap of the Google words with embeddings
 		
 		try (BufferedReader reader = new BufferedReader(new FileReader(path))) {	//BufferedFileReader for the passed path | Wrap in try - to close even on exception thrown
@@ -83,7 +79,7 @@ public class FileHandler {
 		
 	}
 	
-	private static void pathScrub(String path) {
+	static void pathScrub(String path) {
 				
 		if(path == null || path.trim().isEmpty()) {
 			throw new IllegalArgumentException("The file path cannot be null or empty!");	//If the path is null or String is empty throw exception
