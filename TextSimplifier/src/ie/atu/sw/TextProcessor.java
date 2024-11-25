@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Eric Murray - G00423903
  * 
  */
-
 public class TextProcessor {
 	
 	Map<String, double[]> googleWordsMap = new ConcurrentHashMap<>();	//CCHashMaps for both Embeddings Map and Google Map
@@ -45,6 +44,11 @@ public class TextProcessor {
      * @param inputPath the path to the input text file.
      * @param outputPath the path to the output text file.
      * @throws IOException if an I/O error occurs during file reading or writing.
+     * 
+     * Big-O Notation
+     * O(m * n)
+     * n: Number of lines in the input file
+     * m: average number of words per line
      */
 	
 	public void simplifyText(String inputPath, String outputPath) throws IOException {
@@ -107,6 +111,10 @@ public class TextProcessor {
      * 
      * @param wordToChange the word to find a replacement for.
      * @return the closest matching word from the Google Map.
+     * 
+     * Big-O Notation
+     * O(k)
+     * k: number of entries in the googleMap
      */
 	
 	public String findClosestWord(String wordToChange) {	//Pass in the current word to change
@@ -144,6 +152,10 @@ public class TextProcessor {
      * @param vectorB the second vector to compare.
      * @return the cosine similarity between the two vectors.
      * @throws IllegalArgumentException if the vectors have different lengths.
+     * 
+     * Big-O Notation
+     * O(n)
+     * n: the number of vectors in each array
      */
 	
 	public static double calcCosineSim(double[] vectorA, double[] vectorB) {	//Calculate the cosine similarity between the two vectors and return the sim value

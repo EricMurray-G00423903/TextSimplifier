@@ -19,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Eric Murray - G00423903
  * 
  */
-
 public class FileHandler {
 	
 	/**
@@ -31,6 +30,11 @@ public class FileHandler {
      * @param path to the embeddings file.
      * @return a Map where keys are words and values are their corresponding embedding vectors.
      * @throws IOException if an I/O error occurs during file reading.
+     * 
+     * Big-O Notation
+     * O(n * m)
+     * n: Number of words
+     * m: Number of vectors per word
      */
 	
 	public static Map<String, double[]> loadEmbeddings(String path) throws IOException {
@@ -81,6 +85,9 @@ public class FileHandler {
      * @return a Map of Google words with their corresponding embeddings.
      * @throws IOException if an I/O error occurs during file reading.
      * 
+     * Big-O Notation
+     *O(n)
+     *n: Number of words in the google list
      */
 	
 	public static Map<String, double[]> loadGoogle(String path, Map<String, double[]> embMap) throws IOException {
@@ -120,6 +127,9 @@ public class FileHandler {
      * 
      * @param path the path to validate.
      * @throws IllegalArgumentException if the path is invalid.
+     * 
+     * Big-O Notation
+     * O(1)
      */
 	
 	static void pathScrub(String path) {

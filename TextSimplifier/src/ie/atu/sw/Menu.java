@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
  * @author Eric Murray - G00423903
  * 
  */
-
 public class Menu {
 
     private String embeddingsFile;
@@ -213,6 +212,15 @@ public class Menu {
      * - Loads embeddings and Google map concurrently using virtual threads.
      * - Invokes the `TextProcessor` to simplify the input file.
      * - Provides feedback on success or failure.
+     * 
+     * Big-O Notation
+     * O(m * d + k + l * W)
+     * m: number of words in embedding file
+     * d: average amount of embeddings
+     * k: number of words in the google list
+     * l: number of lines in the input file
+     * W: average number of words per line
+     * 
      */
     private void executeSimplification() {
         try {
