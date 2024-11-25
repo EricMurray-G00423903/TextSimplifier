@@ -8,10 +8,28 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * TextProcessor Class - Processes input text files by simplifying words based on
+ * embeddings and a predefined Google word list. This class handles:
+ * - Simplifying text files by replacing words not in the Google Map with their closest match.
+ * - Calculating cosine similarity for word vector comparison.
+ * - Finding the closest matching word in the Google Map.
+ * 
+ * @author Eric Murray - G00423903
+ * 
+ */
+
 public class TextProcessor {
 	
 	Map<String, double[]> googleWordsMap = new ConcurrentHashMap<>();	//CCHashMaps for both Embeddings Map and Google Map
 	Map<String, double[]> embeddingsMap = new ConcurrentHashMap<>();
+	
+	/**
+     * Constructs a TextProcessor with the specified Google Map and embeddings Map.
+     * 
+     * @param googleWordsMap a Map of Google words with their corresponding embeddings.
+     * @param embeddingsMap a Map of embeddings for all words.
+     */
 	
 	public TextProcessor(Map<String, double[]> googleWordsMap, Map<String, double[]> embeddingsMap) {	//Constructor to assign maps
 		
@@ -19,6 +37,15 @@ public class TextProcessor {
 		this.embeddingsMap = embeddingsMap;
 		
 	}
+	
+	/**
+     * Simplifies the input text file by replacing words not in the Google Map 
+     * with their closest match, and writes the result to the output file.
+     * 
+     * @param inputPath the path to the input text file.
+     * @param outputPath the path to the output text file.
+     * @throws IOException if an I/O error occurs during file reading or writing.
+     */
 	
 	public void simplifyText(String inputPath, String outputPath) throws IOException {
 		
@@ -74,6 +101,14 @@ public class TextProcessor {
 		
 	}
 	
+	/**
+     * Finds the closest word in the Google Map to the specified word 
+     * based on cosine similarity of their vector representations.
+     * 
+     * @param wordToChange the word to find a replacement for.
+     * @return the closest matching word from the Google Map.
+     */
+	
 	public String findClosestWord(String wordToChange) {	//Pass in the current word to change
 				
 		String closestWord = null;	//Init the word to return
@@ -101,6 +136,15 @@ public class TextProcessor {
 		return closestWord;	//Return the closest word
 		
 	}
+	
+	/**
+     * Calculates the cosine similarity between two vectors.
+     * 
+     * @param vectorA the first vector to compare.
+     * @param vectorB the second vector to compare.
+     * @return the cosine similarity between the two vectors.
+     * @throws IllegalArgumentException if the vectors have different lengths.
+     */
 	
 	public static double calcCosineSim(double[] vectorA, double[] vectorB) {	//Calculate the cosine similarity between the two vectors and return the sim value
 		

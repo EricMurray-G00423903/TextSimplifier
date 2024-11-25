@@ -3,6 +3,21 @@ package ie.atu.sw;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
+
+
+/**
+ * Menu Class - Handles the user interaction via a console menu interface.
+ * 
+ * This class provides the functionality for:
+ * - Displaying menu options to the user.
+ * - Allowing the user to specify file paths for embeddings, Google words, input, and output files.
+ * - Validating file paths using the `FileHandler.pathScrub` method.
+ * - Executing the text simplification process.
+ * - Displaying a progress bar for execution feedback.
+ * @author Eric Murray - G00423903
+ * 
+ */
 
 public class Menu {
 
@@ -12,6 +27,10 @@ public class Menu {
     private String outputFile = "./out.txt";
     private final Scanner scanner = new Scanner(System.in); // Single scanner instance for the class
 
+    /**
+     * Runs the menu loop, continuously displaying the menu and handling user input.
+     * This method keeps the program interactive until the user exits.
+     */
     public void run() {
         while (true) {
             displayMenu();
@@ -19,6 +38,9 @@ public class Menu {
         }
     }
 
+    /**
+     * Displays the main menu with available options for the user.
+     */
     private void displayMenu() {
         System.out.println(ConsoleColour.YELLOW_BOLD_BRIGHT);
         System.out.println("************************************************************");
@@ -32,7 +54,11 @@ public class Menu {
         System.out.println("(5) Execute, Analyse and Report");
         System.out.println("(9) Quit");
     }
-
+    
+    /**
+     * Handles user input and routes it to the appropriate methods 
+     * based on the user's choice.
+     */
     private void handleUserInput() {
     	
         System.out.print("Select Option [1-9]> ");
@@ -64,6 +90,10 @@ public class Menu {
         
     }
 
+    /**
+     * Sets the file path for the embeddings file.
+     * Validates the file path and provides feedback on success or failure.
+     */
     private void setEmbeddingsFile() {
     	
         System.out.print("Enter path for embeddings file: ");
@@ -91,6 +121,10 @@ public class Menu {
         
     }
 
+    /**
+     * Sets the file path for the Google words file.
+     * Validates the file path and provides feedback on success or failure.
+     */
     private void setGoogleFile() {
     	
         System.out.print("Enter path for Google 1000 file: ");
@@ -122,6 +156,10 @@ public class Menu {
         
     }
 
+    /**
+     * Sets the file path for the output file.
+     * If no path is specified, it defaults to "./out.txt".
+     */	
     private void setOutputFile() {
     	
         System.out.print("Enter path for output file (default: ./out.txt): ");
@@ -133,7 +171,11 @@ public class Menu {
         pauseAndClear();
         
     }
-
+    
+    /**
+     * Sets the file path for the input file to be simplified.
+     * Validates the file path and provides feedback on success or failure.
+     */
     private void setInputFile() {
     	
         System.out.print("Enter path for input file: ");
@@ -165,10 +207,16 @@ public class Menu {
         
     }
 
+    /**
+     * Executes the text simplification process using virtual threads.
+     * - Validates all file paths.
+     * - Loads embeddings and Google map concurrently using virtual threads.
+     * - Invokes the `TextProcessor` to simplify the input file.
+     * - Provides feedback on success or failure.
+     */
     private void executeSimplification() {
-    	
         try {
-            // Validate that all required paths are set
+            // Validate file paths
             if (embeddingsFile == null || googleFile == null || inputFile == null || outputFile == null) {
                 System.out.println(ConsoleColour.RED + "Error: File paths must be set before executing." + ConsoleColour.RESET);
                 return;
@@ -176,24 +224,60 @@ public class Menu {
 
             clearScreen();
             System.out.println("Simplifying text file...");
-            displayProgressBar(100); // Display progress bar
+            displayProgressBar(50); // Simulate progress for loading tasks
 
-            // Load embeddings and Google map
-            Map<String, double[]> embeddingsMap = FileHandler.loadEmbeddings(embeddingsFile);
-            Map<String, double[]> googleMap = FileHandler.loadGoogle(googleFile, embeddingsMap);
+            // Variables to store results
+            final Map<String, double[]> embeddingsMap;
+            final Map<String, double[]> googleMap;
 
-            // Create TextProcessor and simplify text
+            // Use virtual threads to load embeddings and Google words concurrently
+            try {
+                // Load embeddings
+                CompletableFuture<Map<String, double[]>> embeddingsFuture = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return FileHandler.loadEmbeddings(embeddingsFile);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to load embeddings: " + e.getMessage(), e);
+                    }
+                });
+
+                // Load Google map (dependent on embeddings)
+                CompletableFuture<Map<String, double[]>> googleFuture = embeddingsFuture.thenApplyAsync(embeddings -> {
+                    try {
+                        return FileHandler.loadGoogle(googleFile, embeddings);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to load Google words: " + e.getMessage(), e);
+                    }
+                });
+
+                // Wait for results
+                embeddingsMap = embeddingsFuture.join();
+                googleMap = googleFuture.join();
+
+            } catch (Exception e) {
+                System.out.println(ConsoleColour.RED + "Error during file loading: " + e.getMessage() + ConsoleColour.RESET);
+                return;
+            }
+
+            // Process the input file with the TextProcessor
             TextProcessor processor = new TextProcessor(googleMap, embeddingsMap);
             processor.simplifyText(inputFile, outputFile);
 
+            // Final success message
             System.out.println(ConsoleColour.GREEN + "Simplification complete!" + ConsoleColour.RESET);
-        } catch (IOException e) {
-        	
-            System.out.println(ConsoleColour.RED + "Error during execution: " + e.getMessage() + ConsoleColour.RESET);
-            
+
+        } catch (Exception e) {
+            System.out.println(ConsoleColour.RED + "Unexpected error during execution: " + e.getMessage() + ConsoleColour.RESET);
         }
     }
 
+
+
+    /**
+     * Displays a progress bar in the terminal to give execution feedback.
+     * 
+     * @param duration the number of steps to complete the progress bar (e.g., 100).
+     */
     public void displayProgressBar(int duration) {
     	
         System.out.print(ConsoleColour.GREEN);
@@ -210,6 +294,12 @@ public class Menu {
         
     }
 
+    /**
+     * Prints the progress bar for the current step.
+     * 
+     * @param index the current step number.
+     * @param total the total number of steps for the progress bar.
+     */
     private void printProgress(int index, int total) {
     	
         if (index > total) return; // Out of range
@@ -230,6 +320,9 @@ public class Menu {
         if (index == total) System.out.println("\n");
     }
 
+    /**
+     * Clears the console screen for a cleaner user experience.
+     */
     private void clearScreen() {
     	
         System.out.print("\033[H\033[2J");
@@ -237,6 +330,10 @@ public class Menu {
         
     }
 
+    /**
+     * Pauses execution for a short duration (e.g., 1 second) 
+     * and then clears the screen.
+     */
     private void pauseAndClear() {
     	
         try {

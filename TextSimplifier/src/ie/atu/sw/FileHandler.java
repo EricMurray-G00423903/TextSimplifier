@@ -7,9 +7,31 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-//TODO Add JavaDocs Comments and Big-O notations
+/**
+ * FileHandler Class - Handles the loading and processing of `.txt` files 
+ * into appropriate data structures such as Maps for embeddings and Google words.
+ * 
+ * This class includes methods for:
+ * - Loading embeddings into a Map.
+ * - Loading a filtered Google word set with corresponding embeddings.
+ * - Validating file paths to ensure correctness.
+ * 
+ * @author Eric Murray - G00423903
+ * 
+ */
 
 public class FileHandler {
+	
+	/**
+     * Loads the embeddings from the specified file path into a Map.
+     * 
+     * Each line in the file should be formatted as: 
+     * word, vectorvalues[]
+     * 
+     * @param path to the embeddings file.
+     * @return a Map where keys are words and values are their corresponding embedding vectors.
+     * @throws IOException if an I/O error occurs during file reading.
+     */
 	
 	public static Map<String, double[]> loadEmbeddings(String path) throws IOException {
 		
@@ -48,6 +70,19 @@ public class FileHandler {
 			
 	}
 	
+	/**
+     * Loads the Google words from the specified file path and maps them to 
+     * their corresponding embeddings from the provided embeddings Map.
+     * 
+     * Only words that exist in the embeddings Map will be included.
+     * 
+     * @param path to the Google words file.
+     * @param embMap the embeddings Map containing word vectors.
+     * @return a Map of Google words with their corresponding embeddings.
+     * @throws IOException if an I/O error occurs during file reading.
+     * 
+     */
+	
 	public static Map<String, double[]> loadGoogle(String path, Map<String, double[]> embMap) throws IOException {
 		
 		Map<String, double[]> googleWords = new ConcurrentHashMap<>();	//CCHashMap of the Google words with embeddings
@@ -78,6 +113,14 @@ public class FileHandler {
 		}	//end of try block
 		
 	}
+	
+	/**
+     * Validates the provided file path to ensure it is not null, non-empty,
+     * ends with `.txt`, and refers to an existing readable file.
+     * 
+     * @param path the path to validate.
+     * @throws IllegalArgumentException if the path is invalid.
+     */
 	
 	static void pathScrub(String path) {
 				
