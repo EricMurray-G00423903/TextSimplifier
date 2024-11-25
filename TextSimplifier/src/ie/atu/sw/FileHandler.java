@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,7 +15,7 @@ public class FileHandler {
 		
 		pathScrub(path);	//Scrub the path to handle any errors before method continues
 		
-		Map<String, double[]> embeddingsMap = new HashMap<>();	//Map of embeddings to populate and return
+		Map<String, double[]> embeddingsMap = new ConcurrentHashMap<>();	//Map of embeddings to populate and return
 		
 		try (BufferedReader reader = new BufferedReader(new FileReader(path))) { 	//BufferedReader for reading the lines of the file
 		
@@ -57,9 +56,9 @@ public class FileHandler {
 		
 		Map<String, double[]> googleWords = new ConcurrentHashMap<>();	//CCHashMap of the Google words with embeddings
 		
-		try (BufferedReader reader = new BufferedReader(new FileReader(path))) {	//BufferedFileReader for the passed path | Wrap in try to close even on exception thrown
+		try (BufferedReader reader = new BufferedReader(new FileReader(path))) {	//BufferedFileReader for the passed path | Wrap in try - to close even on exception thrown
 		
-			String line = reader.readLine();	//String to hold the current word || Read the first line to check for Empty Files
+			String line = reader.readLine();	//String to hold the current word | Read the first line to check for Empty Files
 			
 			if(line == null) {
 				
@@ -67,7 +66,6 @@ public class FileHandler {
 				return googleWords;
 				
 			}
-			
 			
 			do {	// Process each line, trim whitespaces, add to map if matches
 				
