@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 
 
 /**
@@ -213,14 +214,17 @@ public class Menu {
      * - Invokes the `TextProcessor` to simplify the input file.
      * - Provides feedback on success or failure.
      * 
-     * Big-O Notation
+     * **Virtual Threads**:
+     * Virtual threads are utilized to improve scalability and efficiency when concurrently 
+     * processing the embeddings and Google map data.
+     * 
+     * Big-O Notation:
      * O(m * d + k + l * W)
      * m: number of words in embedding file
      * d: average amount of embeddings
-     * k: number of words in the google list
+     * k: number of words in the Google list
      * l: number of lines in the input file
      * W: average number of words per line
-     * 
      */
     private void executeSimplification() {
         try {
@@ -238,8 +242,11 @@ public class Menu {
             final Map<String, double[]> embeddingsMap;
             final Map<String, double[]> googleMap;
 
-            // Use virtual threads to load embeddings and Google words concurrently
+            // Create virtual thread executor
+            var virtualThreadExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory());
+
             try {
+                // Use virtual threads to load embeddings and Google words concurrently
                 // Load embeddings
                 CompletableFuture<Map<String, double[]>> embeddingsFuture = CompletableFuture.supplyAsync(() -> {
                     try {
@@ -247,7 +254,7 @@ public class Menu {
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to load embeddings: " + e.getMessage(), e);
                     }
-                });
+                }, virtualThreadExecutor);
 
                 // Load Google map (dependent on embeddings)
                 CompletableFuture<Map<String, double[]>> googleFuture = embeddingsFuture.thenApplyAsync(embeddings -> {
@@ -256,7 +263,7 @@ public class Menu {
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to load Google words: " + e.getMessage(), e);
                     }
-                });
+                }, virtualThreadExecutor);
 
                 // Wait for results
                 embeddingsMap = embeddingsFuture.join();
@@ -265,6 +272,8 @@ public class Menu {
             } catch (Exception e) {
                 System.out.println(ConsoleColour.RED + "Error during file loading: " + e.getMessage() + ConsoleColour.RESET);
                 return;
+            } finally {
+                virtualThreadExecutor.close(); // Ensure the executor is closed to release resources
             }
 
             // Process the input file with the TextProcessor
@@ -278,7 +287,6 @@ public class Menu {
             System.out.println(ConsoleColour.RED + "Unexpected error during execution: " + e.getMessage() + ConsoleColour.RESET);
         }
     }
-
 
 
     /**
