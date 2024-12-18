@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.StructuredTaskScope;
 
 
 /**
@@ -208,23 +209,23 @@ public class Menu {
     }
 
     /**
-     * Executes the text simplification process using virtual threads.
-     * - Validates all file paths.
-     * - Loads embeddings and Google map concurrently using virtual threads.
-     * - Invokes the `TextProcessor` to simplify the input file.
-     * - Provides feedback on success or failure.
+     * Executes the text simplification process using structured concurrency and virtual threads.
+     * - Validates all file paths required for the process.
+     * - Loads the embeddings map and the Google map concurrently, ensuring proper dependencies.
+     * - Simplifies the input file using the `TextProcessor` and outputs the results to the specified file.
+     * - Provides user feedback on the process status and any errors encountered.
      * 
-     * **Virtual Threads**:
-     * Virtual threads are utilized to improve scalability and efficiency when concurrently 
-     * processing the embeddings and Google map data.
+     * **Structured Concurrency**:
+     * Uses `StructuredTaskScope` to manage virtual threads for concurrent processing of the embeddings
+     * and Google map. Ensures that tasks complete and dependencies are respected before proceeding.
      * 
-     * Big-O Notation:
-     * O(m * d + k + l * W)
-     * m: number of words in embedding file
-     * d: average amount of embeddings
-     * k: number of words in the Google list
-     * l: number of lines in the input file
-     * W: average number of words per line
+     * **Big-O Time Complexity**:
+     * - Loading embeddings: O(m * d), where `m` is the number of words in the embeddings file, 
+     *   and `d` is the average size of the word vectors.
+     * - Loading Google map: O(k), where `k` is the number of words in the Google list.
+     * - Simplifying the input file: O(l * W * k * d), where `l` is the number of lines in the input file, 
+     *   `W` is the average number of words per line, `k` is the number of Google words, and `d` is the vector size.
+     * - Total: O(m * d + l * W * k * d).
      */
     private void executeSimplification() {
         try {
@@ -236,44 +237,27 @@ public class Menu {
 
             clearScreen();
             System.out.println("Simplifying text file...");
-            displayProgressBar(50); // Simulate progress for loading tasks
+            displayProgressBar(50);
 
-            // Variables to store results
-            final Map<String, double[]> embeddingsMap;
-            final Map<String, double[]> googleMap;
+            Map<String, double[]> embeddingsMap;
+            Map<String, double[]> googleMap;
 
-            // Create virtual thread executor
-            var virtualThreadExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory());
+            // Use StructuredTaskScope for concurrency
+            try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+                // Submit tasks to the scope
+                var embeddingsTask = scope.fork(() -> FileHandler.loadEmbeddings(embeddingsFile));
+                var googleTask = scope.fork(() -> {
+                    Map<String, double[]> embeddings = embeddingsTask.get();
+                    return FileHandler.loadGoogle(googleFile, embeddings);
+                });
 
-            try {
-                // Use virtual threads to load embeddings and Google words concurrently
-                // Load embeddings
-                CompletableFuture<Map<String, double[]>> embeddingsFuture = CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return FileHandler.loadEmbeddings(embeddingsFile);
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to load embeddings: " + e.getMessage(), e);
-                    }
-                }, virtualThreadExecutor);
+                // Join and handle exceptions
+                scope.join(); // Wait for all tasks to complete
+                scope.throwIfFailed(); // Throw exception if any task failed
 
-                // Load Google map (dependent on embeddings)
-                CompletableFuture<Map<String, double[]>> googleFuture = embeddingsFuture.thenApplyAsync(embeddings -> {
-                    try {
-                        return FileHandler.loadGoogle(googleFile, embeddings);
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to load Google words: " + e.getMessage(), e);
-                    }
-                }, virtualThreadExecutor);
-
-                // Wait for results
-                embeddingsMap = embeddingsFuture.join();
-                googleMap = googleFuture.join();
-
-            } catch (Exception e) {
-                System.out.println(ConsoleColour.RED + "Error during file loading: " + e.getMessage() + ConsoleColour.RESET);
-                return;
-            } finally {
-                virtualThreadExecutor.close(); // Ensure the executor is closed to release resources
+                // Retrieve results from tasks
+                embeddingsMap = embeddingsTask.get(); // Get the result of embeddingsTask
+                googleMap = googleTask.get(); // Get the result of googleTask
             }
 
             // Process the input file with the TextProcessor
@@ -282,12 +266,10 @@ public class Menu {
 
             // Final success message
             System.out.println(ConsoleColour.GREEN + "Simplification complete!" + ConsoleColour.RESET);
-
         } catch (Exception e) {
             System.out.println(ConsoleColour.RED + "Unexpected error during execution: " + e.getMessage() + ConsoleColour.RESET);
         }
     }
-
 
     /**
      * Displays a progress bar in the terminal to give execution feedback.

@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 
 /**
  * TextProcessor Class - Processes input text files by simplifying words based on
@@ -38,72 +39,61 @@ public class TextProcessor {
 	}
 	
 	/**
-     * Simplifies the input text file by replacing words not in the Google Map 
-     * with their closest match, and writes the result to the output file.
-     * 
-     * @param inputPath the path to the input text file.
-     * @param outputPath the path to the output text file.
-     * @throws IOException if an I/O error occurs during file reading or writing.
-     * 
-     * Big-O Notation
-     * O(m * n)
-     * n: Number of lines in the input file
-     * m: average number of words per line
-     */
-	
+	 * Simplifies the input text file by replacing words not in the Google Map 
+	 * with their closest match based on cosine similarity. If a word is not found 
+	 * in either the Google Map or the embeddings map, it is left unchanged.
+	 * The simplified text is then written to the output file.
+	 * 
+	 * **Virtual Threads**:
+	 * Uses virtual threads to process each word concurrently, improving scalability and 
+	 * performance when handling large input files.
+	 * 
+	 * @param inputPath the path to the input text file.
+	 * @param outputPath the path to the output text file.
+	 * @throws IOException if an I/O error occurs during file reading or writing.
+	 * 
+	 * **Big-O Time Complexity**:
+	 * - Processing each word: O(k * d), where `k` is the number of words in the Google Map, 
+	 *   and `d` is the size of the word vectors.
+	 * - For the entire file: O(l * W * k * d), where `l` is the number of lines in the input file, 
+	 *   and `W` is the average number of words per line.
+	 */
 	public void simplifyText(String inputPath, String outputPath) throws IOException {
-		
-		try (BufferedReader reader = new BufferedReader(new FileReader(inputPath));		//Wrapped Buffered reader to close even if exception thrown
-			 BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath))) {
-		
-			String line;
-			
-			while((line = reader.readLine()) != null) {
-				
-				if (line.trim().isEmpty()) {	//Handle if the current Line is Empty
-				    writer.newLine();
-				    continue;
-				}
-				
-				String[] splitLines = line.split("((?=\\p{Punct})|(?<=\\p{Punct})|\\s+)");	//Regex to split lines by punctuation and by white spaces
-				
-				StringBuilder sb = new StringBuilder();	//Create a String Builder
-				
-				for (int i = 0; i < splitLines.length; i++) { // Iterate over the split Line
+	    try (BufferedReader reader = new BufferedReader(new FileReader(inputPath));
+	         BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath))) {
 
-				    if (splitLines[i].matches("\\p{Punct}+")) {
-				    	
-				        sb.append(splitLines[i]); // Append punctuation directly without a space
-				        continue; // Move to the next iteration after handling punctuation
-				        
-				    }
+	        var executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory());
 
-				    if (this.googleWordsMap.containsKey(splitLines[i])) {	// If the word is in the Google Map
-				    	
-				        sb.append(splitLines[i]).append(" "); // Append the word with a space
-				        
-				    } else { // If it's not in the Google Map
-				    	
-				        if (this.embeddingsMap.containsKey(splitLines[i])) { // If it's in the embeddings map
-				        	
-				            String newWord = findClosestWord(splitLines[i]); // Find the closest word
-				            sb.append(newWord).append(" "); // Append the new word with a space
-				            
-				        } else { // If the word doesn't exist in either map
-				        	
-				            sb.append(splitLines[i]).append(" "); // Append the word as-is with a space
-				            
-				        }
-				    }
-				}
-				
-				writer.write(sb.toString().trim());	//write the current sb String to the line
-				writer.newLine();				//Move to the next line
-				
-			}
-		}
-		
+	        String line;
+	        while ((line = reader.readLine()) != null) {
+	            if (line.trim().isEmpty()) {
+	                writer.newLine();
+	                continue;
+	            }
+
+	            String[] splitLines = line.split("((?=\\p{Punct})|(?<=\\p{Punct})|\\s+)");
+	            StringBuilder sb = new StringBuilder();
+
+	            for (String word : splitLines) {
+	                executor.execute(() -> {
+	                    if (googleWordsMap.containsKey(word)) {
+	                        sb.append(word).append(" ");
+	                    } else if (embeddingsMap.containsKey(word)) {
+	                        String newWord = findClosestWord(word);
+	                        sb.append(newWord).append(" ");
+	                    } else {
+	                        sb.append(word).append(" ");
+	                    }
+	                });
+	            }
+
+	            writer.write(sb.toString().trim());
+	            writer.newLine();
+	        }
+	        executor.close();
+	    }
 	}
+
 	
 	/**
      * Finds the closest word in the Google Map to the specified word 
