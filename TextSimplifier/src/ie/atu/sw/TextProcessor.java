@@ -39,61 +39,94 @@ public class TextProcessor {
 	}
 	
 	/**
-	 * Simplifies the input text file by replacing words not in the Google Map 
-	 * with their closest match based on cosine similarity. If a word is not found 
-	 * in either the Google Map or the embeddings map, it is left unchanged.
-	 * The simplified text is then written to the output file.
+	 * Simplifies the input text file by processing each word independently and replacing 
+	 * words not in the Google Map with their closest match based on cosine similarity. 
+	 * If a word is not found in either the Google Map or the embeddings map, it is left unchanged. 
+	 * Spaces and punctuation are preserved as-is.
 	 * 
 	 * **Virtual Threads**:
-	 * Uses virtual threads to process each word concurrently, improving scalability and 
-	 * performance when handling large input files.
+	 * Utilizes virtual threads to process each word concurrently, leveraging the lightweight 
+	 * concurrency model to improve scalability and performance for large input files. Each 
+	 * thread determines the appropriate action (preserve, replace, or skip) for its assigned word.
 	 * 
-	 * @param inputPath the path to the input text file.
+	 * @param inputPath  the path to the input text file.
 	 * @param outputPath the path to the output text file.
 	 * @throws IOException if an I/O error occurs during file reading or writing.
 	 * 
 	 * **Big-O Time Complexity**:
-	 * - Processing each word: O(k * d), where `k` is the number of words in the Google Map, 
-	 *   and `d` is the size of the word vectors.
-	 * - For the entire file: O(l * W * k * d), where `l` is the number of lines in the input file, 
-	 *   and `W` is the average number of words per line.
+	 * - Processing each word: O(k * d), where:
+	 *   - `k` is the number of words in the Google Map.
+	 *   - `d` is the size of the word vectors.
+	 * - For the entire file: O(l * W * k * d), where:
+	 *   - `l` is the number of lines in the input file.
+	 *   - `W` is the average number of words per line.
 	 */
 	public void simplifyText(String inputPath, String outputPath) throws IOException {
-	    try (BufferedReader reader = new BufferedReader(new FileReader(inputPath));
-	         BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath))) {
+	    try (
+	        BufferedReader reader = new BufferedReader(new FileReader(inputPath));  // BufferedReader to read input file
+	        BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath))  // BufferedWriter to write to output file
+	    ) {
 
-	        var executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory());
+	        String line; // Hold the current line being processed
 
-	        String line;
-	        while ((line = reader.readLine()) != null) {
-	            if (line.trim().isEmpty()) {
+	        while ((line = reader.readLine()) != null) { // Read each line until EOF
+
+	            if (line.trim().isEmpty()) { // If the line is empty, write a new line and skip
 	                writer.newLine();
 	                continue;
 	            }
 
-	            String[] splitLines = line.split("((?=\\p{Punct})|(?<=\\p{Punct})|\\s+)");
-	            StringBuilder sb = new StringBuilder();
+	            // Split the line into words, spaces, and punctuation while preserving them as tokens
+	            String[] splitLines = line.split("(?<=\\b)|(?=\\b)|(?=\\p{Punct})|(?<=\\p{Punct})");
+	            String[] processedWords = new String[splitLines.length]; // Array to store processed words
 
-	            for (String word : splitLines) {
-	                executor.execute(() -> {
-	                    if (googleWordsMap.containsKey(word)) {
-	                        sb.append(word).append(" ");
+	            // Virtual thread executor for concurrent processing
+	            var executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory());
+
+	            for (int i = 0; i < splitLines.length; i++) {
+	                final int index = i; // Store the current index for thread-safe operation
+	                final String word = splitLines[i]; // Current word to process
+
+	                executor.execute(() -> { // Execute each word processing in a virtual thread
+
+	                    // Preserve spaces directly
+	                    if (word.matches("\\s+")) {
+	                        processedWords[index] = word;
+
+	                    // If the word exists in the Google map, leave it unchanged
+	                    } else if (googleWordsMap.containsKey(word)) {
+	                        processedWords[index] = word;
+
+	                    // If the word exists in the embeddings map, replace it with the closest match in the Google map
 	                    } else if (embeddingsMap.containsKey(word)) {
-	                        String newWord = findClosestWord(word);
-	                        sb.append(newWord).append(" ");
+	                        String closestWord = findClosestWord(word);
+	                        processedWords[index] = closestWord;
+
+	                    // If the word is not found in either map, leave it unchanged
 	                    } else {
-	                        sb.append(word).append(" ");
+	                        processedWords[index] = word;
 	                    }
 	                });
 	            }
 
+	            // Shutdown executor and ensure all threads have completed processing
+	            executor.shutdown();
+	            while (!executor.isTerminated()) {
+	                Thread.yield(); // Yield to allow virtual threads to complete
+	            }
+
+	            // Assemble the processed words back into a line
+	            StringBuilder sb = new StringBuilder();
+	            for (String processedWord : processedWords) {
+	                sb.append(processedWord); // Append each processed word in order
+	            }
+
+	            // Write the assembled line to the output file
 	            writer.write(sb.toString().trim());
 	            writer.newLine();
 	        }
-	        executor.close();
 	    }
 	}
-
 	
 	/**
      * Finds the closest word in the Google Map to the specified word 
@@ -117,7 +150,6 @@ public class TextProcessor {
 		
 		for (Map.Entry<String, double[]> entry : googleWordsMap.entrySet()) {	//Foreach loop over all the elements in the google map hashmap
 			
-			String currentWord = entry.getKey();	//Get the current word
 			double[] currentVector = entry.getValue();	//Get its vectors
 			
 			double currentCosine = calcCosineSim(wordVector, currentVector);	//Get the cosine similarity between the two sets of vectors

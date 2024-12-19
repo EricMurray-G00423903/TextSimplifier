@@ -36,7 +36,6 @@ public class FileHandler {
      * n: Number of words
      * m: Number of vectors per word
      */
-	
 	public static Map<String, double[]> loadEmbeddings(String path) throws IOException {
 		
 		Map<String, double[]> embeddingsMap = new ConcurrentHashMap<>();	//Map of embeddings to populate and return
